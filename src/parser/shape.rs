@@ -10,27 +10,6 @@ pub struct Shape {
     name: String,
 }
 
-impl ShapeType {
-    pub fn from_serde_json(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
-        let shape_type = match obj.get("type") {
-            Some(&Value::String(ref s)) => s.as_bytes(),
-            _ => return Err(ParseError::TypeStringMissing)
-        };
-        match shape_type {
-            b"boolean" => Ok(ShapeType::Boolean),
-            b"double" => Ok(ShapeType::Double),
-            b"float" => Ok(ShapeType::Float),
-            b"long" => Ok(ShapeType::Long),
-            b"timestamp" => Ok(ShapeType::Timestamp),
-            b"blob" |
-            b"integer" |
-            b"string" |
-            b"structure" => Err(ParseError::NotImplemented),
-            _ => Err(ParseError::InvalidTypeString)
-        }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub enum ParseError {
     ExpectedObject,
@@ -54,6 +33,27 @@ pub enum ShapeType {
     Structure(Structure),           // custom struct
     Exception(Exception),           // custom struct
     Timestamp,                      // TODO - determine Rust type for this
+}
+
+impl ShapeType {
+    pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
+        let shape_type = match obj.get("type") {
+            Some(&Value::String(ref s)) => s.as_bytes(),
+            _ => return Err(ParseError::TypeStringMissing)
+        };
+        match shape_type {
+            b"boolean" => Ok(ShapeType::Boolean),
+            b"double" => Ok(ShapeType::Double),
+            b"float" => Ok(ShapeType::Float),
+            b"long" => Ok(ShapeType::Long),
+            b"timestamp" => Ok(ShapeType::Timestamp),
+            b"blob" |
+            b"integer" |
+            b"string" |
+            b"structure" => Err(ParseError::NotImplemented),
+            _ => Err(ParseError::InvalidTypeString)
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -94,55 +94,42 @@ mod test {
     extern crate serde;
     extern crate serde_json;
 
-    use serde_json::Value;
     use super::*;
-    use std::collections::BTreeMap;
+    use ::testhelpers::fixture_btreemap;
 
     #[test]
-    fn parse_boolean_shape_from_serde_json_value() {
-        let mut input = BTreeMap::new();
-        input.insert("type".to_string(), Value::String("boolean".to_string()));
-        let output = ShapeType::from_serde_json(&input);
+    fn parse_boolean_shape_type() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/boolean"));
         assert_eq!(output, Ok(ShapeType::Boolean));
     }
 
     #[test]
-    fn parse_double_shape_from_serde_json_value() {
-        let mut input = BTreeMap::new();
-        input.insert("type".to_string(), Value::String("double".to_string()));
-        let output = ShapeType::from_serde_json(&input);
+    fn parse_double_shape_type() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/double"));
         assert_eq!(output, Ok(ShapeType::Double));
     }
 
     #[test]
-    fn parse_float_shape_from_serde_json_value() {
-        let mut input = BTreeMap::new();
-        input.insert("type".to_string(), Value::String("float".to_string()));
-        let output = ShapeType::from_serde_json(&input);
+    fn parse_float_shape_type() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/float"));
         assert_eq!(output, Ok(ShapeType::Float));
     }
 
     #[test]
-    fn parse_long_shape_from_serde_json_value() {
-        let mut input = BTreeMap::new();
-        input.insert("type".to_string(), Value::String("long".to_string()));
-        let output = ShapeType::from_serde_json(&input);
+    fn parse_long_shape_type() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/long"));
         assert_eq!(output, Ok(ShapeType::Long));
     }
 
     #[test]
-    fn parse_timestamp_shape_from_serde_json_value() {
-        let mut input = BTreeMap::new();
-        input.insert("type".to_string(), Value::String("timestamp".to_string()));
-        let output = ShapeType::from_serde_json(&input);
+    fn parse_timestamp_shape_type() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/timestamp"));
         assert_eq!(output, Ok(ShapeType::Timestamp));
     }
 
     #[test]
     fn parse_error_invalid_shape_type() {
-        let mut input = BTreeMap::new();
-        input.insert("type".to_string(), Value::String("invalid-type".to_string()));
-        let output = ShapeType::from_serde_json(&input);
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/invalid-type"));
         assert_eq!(output, Err(ParseError::InvalidTypeString));
     }
 }

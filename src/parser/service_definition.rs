@@ -28,12 +28,12 @@ mod test {
     extern crate serde_json;
 
     use super::*;
-    use std::fs::File;
+    use ::testhelpers::fixture_reader;
 
     #[test]
     #[allow(unused_mut)]
     fn parse_service_definition_without_error() {
-        let mut fd = File::open("fixtures/services/lambda-2015-03-31.json").unwrap();
+        let mut fd = fixture_reader("services/lambda-2015-03-31");
         let _: ServiceDefinition = serde_json::from_reader(fd).unwrap();
     }
 }

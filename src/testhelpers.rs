@@ -1,0 +1,27 @@
+extern crate serde;
+extern crate serde_json;
+
+use serde_json::Value;
+use std::fs::File;
+use std::collections::BTreeMap;
+
+/// Returns a File for a given path (relative to project src/fixtures dir).
+/// This method panics on error, which is exactly should happen in tests.
+/// The returned File object is a Reader.
+/// Ex: to open the fixture fixtures/services/foo.json do `fixture_reader("services/foo")`
+pub fn fixture_reader(path: &str) -> File {
+    File::open(format!("fixtures/{}.json", path)).unwrap()
+}
+
+#[allow(unused_mut)]
+/// Returns a serde_json Value from a fixture or panics.
+pub fn fixture_json(path: &str) -> Value {
+    let mut fd = fixture_reader(path);
+    serde_json::from_reader(fd).unwrap()
+}
+
+/// Returns a BTreeMap from a json fixture or panics.
+pub fn fixture_btreemap(path: &str) -> BTreeMap<String, Value> {
+    let json = fixture_json(path);
+    json.as_object().unwrap().clone()
+}

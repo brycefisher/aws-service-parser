@@ -10,6 +10,7 @@ use std::fs::File;
 use parser::ServiceDefinition;
 
 mod parser;
+mod testhelpers;
 
 const SERVICE_FILE: &'static str = "fixtures/services/lambda-2015-03-31.json";
 
