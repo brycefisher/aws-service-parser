@@ -10,13 +10,9 @@ pub struct Shape {
     name: String,
 }
 
-impl Shape {
-    pub fn from_serde_json(json: Value) -> Result<ShapeType, ParseError> {
-        let shape_obj: BTreeMap<String, Value> = match json {
-            Value::Object(obj) => obj,
-            _ => return Err(ParseError::ExpectedObject)
-        };
-        let shape_type = match shape_obj.get("type") {
+impl ShapeType {
+    pub fn from_serde_json(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
+        let shape_type = match obj.get("type") {
             Some(&Value::String(ref s)) => s.as_bytes(),
             _ => return Err(ParseError::TypeStringMissing)
         };
@@ -104,55 +100,49 @@ mod test {
 
     #[test]
     fn parse_boolean_shape_from_serde_json_value() {
-        let mut map = BTreeMap::new();
-        map.insert("type".to_string(), Value::String("boolean".to_string()));
-        let input = Value::Object(map);
-        let output = Shape::from_serde_json(input);
+        let mut input = BTreeMap::new();
+        input.insert("type".to_string(), Value::String("boolean".to_string()));
+        let output = ShapeType::from_serde_json(&input);
         assert_eq!(output, Ok(ShapeType::Boolean));
     }
 
     #[test]
     fn parse_double_shape_from_serde_json_value() {
-        let mut map = BTreeMap::new();
-        map.insert("type".to_string(), Value::String("double".to_string()));
-        let input = Value::Object(map);
-        let output = Shape::from_serde_json(input);
+        let mut input = BTreeMap::new();
+        input.insert("type".to_string(), Value::String("double".to_string()));
+        let output = ShapeType::from_serde_json(&input);
         assert_eq!(output, Ok(ShapeType::Double));
     }
 
     #[test]
     fn parse_float_shape_from_serde_json_value() {
-        let mut map = BTreeMap::new();
-        map.insert("type".to_string(), Value::String("float".to_string()));
-        let input = Value::Object(map);
-        let output = Shape::from_serde_json(input);
+        let mut input = BTreeMap::new();
+        input.insert("type".to_string(), Value::String("float".to_string()));
+        let output = ShapeType::from_serde_json(&input);
         assert_eq!(output, Ok(ShapeType::Float));
     }
 
     #[test]
     fn parse_long_shape_from_serde_json_value() {
-        let mut map = BTreeMap::new();
-        map.insert("type".to_string(), Value::String("long".to_string()));
-        let input = Value::Object(map);
-        let output = Shape::from_serde_json(input);
+        let mut input = BTreeMap::new();
+        input.insert("type".to_string(), Value::String("long".to_string()));
+        let output = ShapeType::from_serde_json(&input);
         assert_eq!(output, Ok(ShapeType::Long));
     }
 
     #[test]
     fn parse_timestamp_shape_from_serde_json_value() {
-        let mut map = BTreeMap::new();
-        map.insert("type".to_string(), Value::String("timestamp".to_string()));
-        let input = Value::Object(map);
-        let output = Shape::from_serde_json(input);
+        let mut input = BTreeMap::new();
+        input.insert("type".to_string(), Value::String("timestamp".to_string()));
+        let output = ShapeType::from_serde_json(&input);
         assert_eq!(output, Ok(ShapeType::Timestamp));
     }
 
     #[test]
     fn parse_error_invalid_shape_type() {
-        let mut map = BTreeMap::new();
-        map.insert("type".to_string(), Value::String("invalid-type".to_string()));
-        let input = Value::Object(map);
-        let output = Shape::from_serde_json(input);
+        let mut input = BTreeMap::new();
+        input.insert("type".to_string(), Value::String("invalid-type".to_string()));
+        let output = ShapeType::from_serde_json(&input);
         assert_eq!(output, Err(ParseError::InvalidTypeString));
     }
 }
