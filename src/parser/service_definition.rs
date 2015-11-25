@@ -31,6 +31,7 @@ mod test {
     use std::fs::File;
 
     #[test]
+    #[allow(unused_mut)]
     fn parse_service_definition_without_error() {
         let mut fd = File::open("fixtures/services/lambda-2015-03-31.json").unwrap();
         let _: ServiceDefinition = serde_json::from_reader(fd).unwrap();
