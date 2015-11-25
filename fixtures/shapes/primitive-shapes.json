@@ -1,0 +1,7 @@
+{
+  "Boolean":{"type":"boolean"},
+  "Date":{"type":"timestamp"},
+  "Long":{"type":"long"},
+  "Double":{"type":"double"},
+  "Float":{"type":"float"}
+}
