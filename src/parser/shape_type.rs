@@ -48,7 +48,8 @@ pub struct Blob(bool);
 
 impl Blob {
     pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
-        Err(ParseError::NotImplemented)
+        let streaming = obj.contains_key("streaming");
+        Ok(ShapeType::Blob(Blob(streaming)))
     }
 }
 
@@ -239,6 +240,12 @@ mod test {
     fn parse_timestamp_shape_type() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/timestamp"));
         assert_eq!(output, Ok(ShapeType::Timestamp));
+    }
+
+    #[test]
+    fn blob_stream() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/blob-stream"));
+        assert_eq!(output, Ok(ShapeType::Blob(Blob(true))));
     }
 
     #[test]
