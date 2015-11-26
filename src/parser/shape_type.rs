@@ -2,7 +2,7 @@ extern crate serde;
 extern crate serde_json;
 
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use super::error::ParseError;
 
 #[derive(Debug, PartialEq)]
@@ -33,11 +33,11 @@ impl ShapeType {
             b"double" => Ok(ShapeType::Double),
             b"float" => Ok(ShapeType::Float),
             b"long" => Ok(ShapeType::Long),
+            b"structure" => Structure::parse(obj),
             b"timestamp" => Ok(ShapeType::Timestamp),
             b"blob" |
             b"integer" |
-            b"string" |
-            b"structure" => Err(ParseError::NotImplemented),
+            b"string" => Err(ParseError::NotImplemented),
             _ => Err(ParseError::InvalidTypeString)
         }
     }
@@ -57,9 +57,32 @@ pub struct StringPattern {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Structure {
-    pub required: Option<Vec<String>>,
-    pub members: Vec<Member>,
+pub struct Structure(Vec<Member>);
+
+impl Structure {
+    fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
+        // Parse the required fields into a set
+        let empty_array = Value::Array(Vec::<Value>::new());
+        let json_array = obj.get("required").unwrap_or(&empty_array);
+        let empty_vec = Vec::<Value>::new();
+        let vec_json = json_array.as_array().unwrap_or(&empty_vec);
+        let mut required_members = HashMap::new();
+        for json in vec_json {
+            let required = try!(json.as_string().ok_or(ParseError::InvalidRequired));
+            required_members.insert(required.to_string(), ());
+        }
+
+        // Parse member fields into member structs
+        let members_value = try!(obj.get("members").ok_or(ParseError::StructureHasNoMembers));
+        let raw_members = try!(members_value.as_object().ok_or(ParseError::InvalidStructureMembers));
+        let mut members = Vec::new();
+        for (name, raw_member) in raw_members.iter() {
+            let required = required_members.contains_key(name);
+            let member = try!(Member::parse(name, required, raw_member));
+            members.push(member);
+        }
+        Ok(ShapeType::Structure(Structure(members)))
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -73,7 +96,57 @@ pub struct Exception {
 #[derive(Debug, PartialEq)]
 pub struct Member {
     pub shape: String, // TODO try to make this a Box<Shape>
+    pub required: bool,
     pub documentation: String,
+    pub name: String,
+    pub location: Location,
+}
+
+impl Member {
+    fn parse(name: &str, required: bool, raw_member: &Value) -> Result<Member, ParseError> {
+        let obj = match raw_member.as_object() {
+            Some(o) => o,
+            None => return Err(ParseError::InvalidMember)
+        };
+        let shape_json = try!(obj.get("shape").ok_or(ParseError::InvalidMember));
+        let shape = try!(shape_json.as_string().ok_or(ParseError::InvalidMember));
+        let documentation_json = try!(obj.get("documentation").ok_or(ParseError::InvalidMember));
+        let documentation = try!(documentation_json.as_string().ok_or(ParseError::InvalidMember));
+        let location = try!(Location::parse(obj.get("location"), obj.get("locationName")));
+
+        Ok(Member {
+            name: name.to_string(),
+            required: required,
+            documentation: documentation.to_string(),
+            shape: shape.to_string(),
+            location: location,
+        })
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Location {
+    Body,
+    URI(String),
+    QueryString(String),
+}
+
+impl Location {
+    pub fn parse(location: Option<&Value>, location_name: Option<&Value>) -> Result<Location, ParseError> {
+        if location.is_none() {
+            return Ok(Location::Body);
+        }
+        let json = try!(location_name.ok_or(ParseError::InvalidMember));
+        let name = try!(json.as_string().ok_or(ParseError::InvalidMember));
+        // Won't panic because we already checked for None above.
+        let json = location.unwrap();
+        let location = try!(json.as_string().ok_or(ParseError::InvalidMember));
+        match location {
+            "uri" => Ok(Location::URI(name.to_string())),
+            "querystring" => Ok(Location::QueryString(name.to_string())),
+            _ => Err(ParseError::NotImplemented),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -119,5 +192,73 @@ mod test {
     fn parse_error_invalid_shape_type() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/invalid-type"));
         assert_eq!(output, Err(ParseError::InvalidTypeString));
+    }
+
+    fn assert_has_member(haystack: &Vec<Member>, needle: Member) {
+        for member in haystack {
+            if needle == *member {
+                return;
+            }
+        }
+        panic!("Member not found: {:?}", needle);
+    }
+
+    #[test]
+    fn structure_add_permission_request() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/structure-add-permission-request"));
+        match output.unwrap() {
+            ShapeType::Structure(Structure(members)) => {
+                assert_has_member(&members, Member {
+                    name: "FunctionName".to_string(),
+                    required: true,
+                    documentation: "<p>Name of the Lambda function whose resource policy you are updating by adding a new permission.</p> <p> You can specify an unqualified function name (for example, \"Thumbnail\") or you can specify Amazon Resource Name (ARN) of the function (for example, \"arn:aws:lambda:us-west-2:account-id:function:ThumbNail\"). AWS Lambda also allows you to specify only the account ID qualifier (for example, \"account-id:Thumbnail\"). Note that the length constraint applies only to the ARN. If you specify only the function name, it is limited to 64 character in length. </p>".to_string(),
+                    shape: "FunctionName".to_string(),
+                    location: Location::URI("FunctionName".to_string()),
+                });
+                assert_has_member(&members, Member {
+                    name: "StatementId".to_string(),
+                    required: true,
+                    documentation: "<p>A unique statement identifier.</p>".to_string(),
+                    shape: "StatementId".to_string(),
+                    location: Location::Body,
+                });
+                assert_has_member(&members, Member {
+                    name: "Action".to_string(),
+                    required: true,
+                    documentation: "<p>The AWS Lambda action you want to allow in this statement. Each Lambda action is a string starting with \"lambda:\" followed by the API name (see <a>Operations</a>). For example, \"lambda:CreateFunction\". You can use wildcard (\"lambda:*\") to grant permission for all AWS Lambda actions. </p>".to_string(),
+                    shape: "Action".to_string(),
+                    location: Location::Body,
+                });
+                assert_has_member(&members, Member {
+                    name: "Principal".to_string(),
+                    required: true,
+                    documentation: "<p>The principal who is getting this permission. It can be Amazon S3 service Principal (\"s3.amazonaws.com\") if you want Amazon S3 to invoke the function, an AWS account ID if you are granting cross-account permission, or any valid AWS service principal such as \"sns.amazonaws.com\". For example, you might want to allow a custom application in another AWS account to push events to AWS Lambda by invoking your function. </p>".to_string(),
+                    shape: "Principal".to_string(),
+                    location: Location::Body,
+                });
+                assert_has_member(&members, Member {
+                    name: "SourceArn".to_string(),
+                    required: false,
+                    documentation: "<p>This is optional; however, when granting Amazon S3 permission to invoke your function, you should specify this field with the bucket Amazon Resource Name (ARN) as its value. This ensures that only events generated from the specified bucket can invoke the function. </p> <important>If you add a permission for the Amazon S3 principal without providing the source ARN, any AWS account that creates a mapping to your function ARN can send events to invoke your Lambda function from Amazon S3.</important>".to_string(),
+                    shape: "Arn".to_string(),
+                    location: Location::Body,
+                });
+                assert_has_member(&members, Member {
+                    name: "SourceAccount".to_string(),
+                    required: false,
+                    documentation: "<p>The AWS account ID (without a hyphen) of the source owner. For example, if the <code>SourceArn</code> identifies a bucket, then this is the bucket owner's account ID. You can use this additional condition to ensure the bucket you specify is owned by a specific account (it is possible the bucket owner deleted the bucket and some other AWS account created the bucket). You can also use this condition to specify all sources (that is, you don't specify the <code>SourceArn</code>) owned by a specific account. </p>".to_string(),
+                    shape: "SourceOwner".to_string(),
+                    location: Location::Body,
+                });
+                assert_has_member(&members, Member {
+                    name: "Qualifier".to_string(),
+                    required: false,
+                    documentation: "<p>You can specify this optional query parameter to specify function version or alias name. The permission will then apply to the specific qualified ARN. For example, if you specify function version 2 as the qualifier, then permission applies only when request is made using qualified function ARN: </p> <p><code>arn:aws:lambda:aws-region:acct-id:function:function-name:2</code></p> <p>If you specify alias name, for example \"PROD\", then the permission is valid only for requests made using the alias ARN:</p> <p><code>arn:aws:lambda:aws-region:acct-id:function:function-name:PROD</code></p> <p>If the qualifier is not specified, the permission is valid only when requests is made using unqualified function ARN. </p> <p><code>arn:aws:lambda:aws-region:acct-id:function:function-name</code></p>".to_string(),
+                    shape: "Qualifier".to_string(),
+                    location: Location::QueryString("Qualifier".to_string()),
+                });
+            }
+            _ => panic!("Wrong type")
+        }
     }
 }

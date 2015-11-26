@@ -3,5 +3,9 @@ pub enum ParseError {
     ExpectedObject,
     TypeStringMissing,
     NotImplemented,
-    InvalidTypeString
+    InvalidTypeString,
+    StructureHasNoMembers,
+    InvalidStructureMembers,
+    InvalidMember,
+    InvalidRequired,
 }
