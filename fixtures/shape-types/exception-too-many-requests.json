@@ -1,0 +1,15 @@
+{
+  "type":"structure",
+  "members":{
+    "retryAfterSeconds":{
+      "shape":"String",
+      "location":"header",
+      "locationName":"Retry-After",
+      "documentation":"<p>The number of seconds the caller should wait before retrying.</p>"
+    },
+    "Type":{"shape":"String"},
+    "message":{"shape":"String"}
+  },
+  "error":{"httpStatusCode":429},
+  "exception":true
+}

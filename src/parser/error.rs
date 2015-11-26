@@ -8,4 +8,5 @@ pub enum ParseError {
     InvalidStructureMembers,
     InvalidMember,
     InvalidRequired,
+    MissingErrorInException,
 }
