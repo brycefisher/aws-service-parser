@@ -33,7 +33,7 @@ impl ShapeType {
             b"double" => Ok(ShapeType::Double),
             b"float" => Ok(ShapeType::Float),
             b"integer" => Integer::parse(obj),
-            b"list" => Err(ParseError::NotImplemented),
+            b"list" => List::parse(obj),
             b"long" => Ok(ShapeType::Long),
             b"structure" => parse_structure_or_exception(obj),
             b"timestamp" => Ok(ShapeType::Timestamp),
@@ -84,6 +84,16 @@ impl Integer {
 
 #[derive(Debug, PartialEq)]
 pub struct List(String);
+
+impl List {
+    pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
+        let json = try!(obj.get("member").ok_or(ParseError::MissingListMember));
+        let member = try!(json.as_object().ok_or(ParseError::InvalidListMember));
+        let json = try!(member.get("shape").ok_or(ParseError::MissingListShape));
+        let shape = try!(json.as_string().ok_or(ParseError::InvalidListShape));
+        Ok(ShapeType::List(List(shape.to_string())))
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct StringEnum(Vec<String>);
@@ -293,11 +303,18 @@ mod test {
     }
 
     #[test]
+    fn list() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/list"));
+        assert_eq!(output, Ok(ShapeType::List(List("AliasConfiguration".to_string()))));
+    }
+
+    #[test]
     fn invalid_type() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/invalid-type"));
         assert_eq!(output, Err(ParseError::InvalidTypeString));
     }
 
+    // TODO -- Genericize and move to testhelpers
     fn assert_has_member(haystack: &Vec<Member>, needle: Member) {
         for member in haystack {
             if needle == *member {
