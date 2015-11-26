@@ -32,7 +32,7 @@ mod test {
 
     #[test]
     #[allow(unused_mut)]
-    fn parse_service_definition_without_error() {
+    fn no_panics() {
         let mut fd = fixture_reader("services/lambda-2015-03-31");
         let _: ServiceDefinition = serde_json::from_reader(fd).unwrap();
     }

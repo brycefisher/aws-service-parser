@@ -213,31 +213,31 @@ mod test {
     use ::testhelpers::fixture_btreemap;
 
     #[test]
-    fn parse_boolean_shape_type() {
+    fn boolean() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/boolean"));
         assert_eq!(output, Ok(ShapeType::Boolean));
     }
 
     #[test]
-    fn parse_double_shape_type() {
+    fn double() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/double"));
         assert_eq!(output, Ok(ShapeType::Double));
     }
 
     #[test]
-    fn parse_float_shape_type() {
+    fn float() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/float"));
         assert_eq!(output, Ok(ShapeType::Float));
     }
 
     #[test]
-    fn parse_long_shape_type() {
+    fn long() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/long"));
         assert_eq!(output, Ok(ShapeType::Long));
     }
 
     #[test]
-    fn parse_timestamp_shape_type() {
+    fn timestamp() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/timestamp"));
         assert_eq!(output, Ok(ShapeType::Timestamp));
     }
@@ -249,7 +249,7 @@ mod test {
     }
 
     #[test]
-    fn parse_error_invalid_shape_type() {
+    fn invalid_type() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/invalid-type"));
         assert_eq!(output, Err(ParseError::InvalidTypeString));
     }
