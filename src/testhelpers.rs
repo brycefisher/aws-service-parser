@@ -25,3 +25,11 @@ pub fn fixture_btreemap(path: &str) -> BTreeMap<String, Value> {
     let json = fixture_json(path);
     json.as_object().unwrap().clone()
 }
+
+/// Returns a portion of the integer fixture file.
+pub fn fixture_integer(fixture: &str) -> BTreeMap<String, Value> {
+    fixture_btreemap("shape-types/integers")
+        .get(fixture).expect("That fixture is not inside fixtures/shape-types/integers.json")
+        .as_object().unwrap()
+        .clone()
+}

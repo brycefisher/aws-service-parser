@@ -55,13 +55,30 @@ impl Blob {
 
 #[derive(Debug, PartialEq)]
 pub struct Integer {
-    pub min: i32,
-    pub max: i32
+    pub min: Option<i64>,
+    pub max: Option<i64>
 }
 
 impl Integer {
     pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
-        Err(ParseError::NotImplemented)
+        let max = match obj.get("max") {
+            Some(json) => match json.as_i64() {
+                Some(max) => Some(max),
+                None => return Err(ParseError::InvalidMaxInteger),
+            },
+            None => None,
+        };
+        let min = match obj.get("min") {
+            Some(json) => match json.as_i64() {
+                Some(min) => Some(min),
+                None => return Err(ParseError::InvalidMinInteger),
+            },
+            None => None,
+        };
+        Ok(ShapeType::Integer(Integer {
+            max: max,
+            min: min,
+        }))
     }
 }
 
@@ -210,7 +227,7 @@ mod test {
 
     use super::*;
     use super::super::error::ParseError;
-    use ::testhelpers::fixture_btreemap;
+    use ::testhelpers::*;
 
     #[test]
     fn boolean() {
@@ -246,6 +263,33 @@ mod test {
     fn blob_stream() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/blob-stream"));
         assert_eq!(output, Ok(ShapeType::Blob(Blob(true))));
+    }
+
+    #[test]
+    fn integer_bound() {
+        let output = ShapeType::parse(&fixture_integer("MemorySize"));
+        assert_eq!(output, Ok(ShapeType::Integer(Integer{
+            min: Some(128),
+            max: Some(1536)
+        })));
+    }
+
+    #[test]
+    fn integer_lower_bound() {
+        let output = ShapeType::parse(&fixture_integer("Timeout"));
+        assert_eq!(output, Ok(ShapeType::Integer(Integer{
+            min: Some(1),
+            max: None
+        })));
+    }
+
+    #[test]
+    fn integer_unbounded() {
+        let output = ShapeType::parse(&fixture_integer("HttpStatus"));
+        assert_eq!(output, Ok(ShapeType::Integer(Integer{
+            min: None,
+            max: None
+        })));
     }
 
     #[test]

@@ -9,4 +9,6 @@ pub enum ParseError {
     InvalidMember,
     InvalidRequired,
     MissingErrorInException,
+    InvalidMaxInteger,
+    InvalidMinInteger,
 }

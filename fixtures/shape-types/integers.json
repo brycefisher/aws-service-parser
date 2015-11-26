@@ -1,0 +1,12 @@
+{
+  "HttpStatus":{"type":"integer"},
+  "Timeout":{
+    "type":"integer",
+    "min":1
+  },
+  "MemorySize":{
+    "type":"integer",
+    "min":128,
+    "max":1536
+  }
+}
