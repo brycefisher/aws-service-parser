@@ -7,16 +7,15 @@ use super::error::ParseError;
 
 #[derive(Debug, PartialEq)]
 pub enum ShapeType {
-    Blob(bool),                     // Vec<u8>, true if streaming
+    Blob(Blob),                     // custom struct
     Boolean,                        // bool
     Double,                         // f64
     Float,                          // f32
-    Integer,                        // i32
-    IntegerRange(IntegerRange),     // i32 with bounds
-    // List,                        // TODO figure out how to implement this...
+    Integer(Integer),               // i32
+    List(List),                     // custom struct
     Long,                           // i64
-    StringEnum(Vec<String>),        // Vec<String> of enum variants
-    StringPattern(StringPattern),   // regex, plus optional lengths
+    StringEnum(StringEnum),         // custom struct
+    StringPattern(StringPattern),   // custom struct
     Structure(Structure),           // custom struct
     Exception(Exception),           // custom struct
     Timestamp,                      // TODO - determine Rust type for this
@@ -29,14 +28,15 @@ impl ShapeType {
             _ => return Err(ParseError::TypeStringMissing)
         };
         match shape_type {
+            b"blob" => Blob::parse(obj),
             b"boolean" => Ok(ShapeType::Boolean),
             b"double" => Ok(ShapeType::Double),
             b"float" => Ok(ShapeType::Float),
+            b"integer" => Integer::parse(obj),
+            b"list" => Err(ParseError::NotImplemented),
             b"long" => Ok(ShapeType::Long),
             b"structure" => parse_structure_or_exception(obj),
             b"timestamp" => Ok(ShapeType::Timestamp),
-            b"blob" |
-            b"integer" |
             b"string" => Err(ParseError::NotImplemented),
             _ => Err(ParseError::InvalidTypeString)
         }
@@ -44,10 +44,31 @@ impl ShapeType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct IntegerRange {
+pub struct Blob(bool);
+
+impl Blob {
+    pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
+        Err(ParseError::NotImplemented)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Integer {
     pub min: i32,
     pub max: i32
 }
+
+impl Integer {
+    pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
+        Err(ParseError::NotImplemented)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct List(String);
+
+#[derive(Debug, PartialEq)]
+pub struct StringEnum(Vec<String>);
 
 #[derive(Debug, PartialEq)]
 pub struct StringPattern {
