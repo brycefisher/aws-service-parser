@@ -1,0 +1,4 @@
+{
+  "type":"list",
+  "member":{"shape":"AliasConfiguration"}
+}

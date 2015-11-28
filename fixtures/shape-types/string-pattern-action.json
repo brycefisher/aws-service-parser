@@ -1,0 +1,4 @@
+{
+  "type":"string",
+  "pattern":"(lambda:[*]|lambda:[a-zA-Z]+|[*])"
+}

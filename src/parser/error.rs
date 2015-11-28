@@ -15,4 +15,9 @@ pub enum ParseError {
     MissingErrorInException,
     InvalidMaxInteger,
     InvalidMinInteger,
+    InvalidStringMax,
+    InvalidStringMin,
+    InvalidStringPattern,
+    InvalidStringEnum,
+    InvalidStringVariant,
 }

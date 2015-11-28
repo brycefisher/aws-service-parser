@@ -1,0 +1,5 @@
+{
+  "type":"string",
+  "max":128,
+  "pattern":"[^\\s]+"
+}

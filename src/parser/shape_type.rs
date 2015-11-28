@@ -37,7 +37,7 @@ impl ShapeType {
             b"long" => Ok(ShapeType::Long),
             b"structure" => parse_structure_or_exception(obj),
             b"timestamp" => Ok(ShapeType::Timestamp),
-            b"string" => Err(ParseError::NotImplemented),
+            b"string" => parse_string_enum_or_pattern(obj),
             _ => Err(ParseError::InvalidTypeString)
         }
     }
@@ -95,14 +95,69 @@ impl List {
     }
 }
 
+pub fn parse_string_enum_or_pattern(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
+    if obj.contains_key("enum") {
+        return StringEnum::parse(obj);
+    }
+    StringPattern::parse(obj)
+}
+
 #[derive(Debug, PartialEq)]
 pub struct StringEnum(Vec<String>);
 
+impl StringEnum {
+    pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
+        // Safe -- will not panic we've checked that `enum` exists prior to this function call.
+        let json = obj.get("enum").unwrap();
+        let array = try!(json.as_array().ok_or(ParseError::InvalidStringEnum));
+        let mut variants: Vec<String> = vec!();
+        for json in array {
+            let variant = try!(json.as_string().ok_or(ParseError::InvalidStringVariant));
+            variants.push(variant.to_string());
+        }
+        Ok(ShapeType::StringEnum(StringEnum(variants)))
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct StringPattern {
-    pub pattern: Option<String>, // TODO - use regex??
-    pub min: Option<i32>,
-    pub max: Option<i32>,
+    pub pattern: String, // TODO - use regex?? - default of .*
+    pub min: Option<i64>,
+    pub max: Option<i64>,
+}
+
+impl StringPattern {
+    pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
+        let max = match obj.get("max") {
+            Some(ref json) => {
+                let max = try!(json.as_i64().ok_or(ParseError::InvalidStringMax));
+                Some(max)
+            }
+            None => None
+        };
+        let min = match obj.get("min") {
+            Some(ref json) => {
+                let min = try!(json.as_i64().ok_or(ParseError::InvalidStringMin));
+                // A minimum string length of 0 is effective no minimum.
+                if min == 0 {
+                    None
+                }
+                else {
+                    Some(min)
+                }
+            }
+            None => None
+        };
+        let pattern = match obj.get("pattern") {
+            Some(json) => try!(json.as_string().ok_or(ParseError::InvalidStringPattern)),
+            None => ".*",
+        };
+        Ok(ShapeType::StringPattern(StringPattern {
+            min: min,
+            max: max,
+            pattern: pattern.to_string(),
+        }))
+    }
 }
 
 pub fn parse_structure_or_exception(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
@@ -306,6 +361,65 @@ mod test {
     fn list() {
         let output = ShapeType::parse(&fixture_btreemap("shape-types/list"));
         assert_eq!(output, Ok(ShapeType::List(List("AliasConfiguration".to_string()))));
+    }
+
+    #[test]
+    fn string_pattern_handler() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/string-pattern-handler"));
+        assert_eq!(output, Ok(ShapeType::StringPattern(StringPattern {
+            pattern: "[^\\s]+".to_string(),
+            min: None,
+            max: Some(128),
+        })));
+    }
+
+    #[test]
+    fn string_pattern_description() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/string-pattern-description"));
+        assert_eq!(output, Ok(ShapeType::StringPattern(StringPattern {
+            pattern: ".*".to_string(),
+            min: None,
+            max: Some(256),
+        })));
+    }
+
+    #[test]
+    fn string_pattern_alias() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/string-pattern-alias"));
+        assert_eq!(output, Ok(ShapeType::StringPattern(StringPattern {
+            pattern: "(?!^[0-9]+$)([a-zA-Z0-9-_]+)".to_string(),
+            min: Some(1),
+            max: Some(128),
+        })));
+    }
+
+    #[test]
+    fn string_pattern_action() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/string-pattern-action"));
+        assert_eq!(output, Ok(ShapeType::StringPattern(StringPattern {
+            pattern: "(lambda:[*]|lambda:[a-zA-Z]+|[*])".to_string(),
+            min: None,
+            max: None,
+        })));
+    }
+
+    #[test]
+    fn string_pattern() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/string-pattern"));
+        assert_eq!(output, Ok(ShapeType::StringPattern(StringPattern {
+            pattern: ".*".to_string(),
+            min: None,
+            max: None,
+        })));
+    }
+
+    #[test]
+    fn string_enum() {
+        let output = ShapeType::parse(&fixture_btreemap("shape-types/string-enum"));
+        assert_eq!(output, Ok(ShapeType::StringEnum(StringEnum(vec!(
+            "TRIM_HORIZON".to_string(),
+            "LATEST".to_string(),
+        )))));
     }
 
     #[test]
