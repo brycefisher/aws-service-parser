@@ -1,6 +1,3 @@
-extern crate serde;
-extern crate serde_json;
-
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 use super::error::ParseError;
@@ -297,9 +294,6 @@ impl Location {
 
 #[cfg(test)]
 mod test {
-    extern crate serde;
-    extern crate serde_json;
-
     use super::*;
     use super::super::error::ParseError;
     use ::testhelpers::*;

@@ -68,9 +68,6 @@ impl ServiceDefinition {
 
 #[cfg(test)]
 mod test {
-    extern crate serde;
-    extern crate serde_json;
-
     use super::*;
     use super::PartialServiceDefinition;
     use ::testhelpers::fixture_reader;
@@ -80,12 +77,5 @@ mod test {
     fn partial() {
         let mut fd = fixture_reader("services/lambda-2015-03-31");
         let _: PartialServiceDefinition = serde_json::from_reader(fd).unwrap();
-    }
-
-    #[test]
-    fn lambda() {
-        let mut fd = fixture_reader("services/lambda-2015-03-31");
-        let output = ServiceDefinition::parse(fd);
-        assert!(output.is_ok(), format!("{:?}", output));
     }
 }

@@ -6,6 +6,6 @@ pub mod operation;
 
 pub use self::error::*;
 pub use self::shape_type::*;
-pub use self::service_definition::*;
-pub use self::shape::*;
-pub use self::operation::*;
+pub use self::service_definition::ServiceDefinition;
+pub use self::shape::Shape;
+pub use self::operation::Operation;
