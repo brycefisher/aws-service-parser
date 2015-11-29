@@ -13,12 +13,16 @@ pub struct Shape {
 
 impl Shape {
     // TODO learn to use lifetimes here to avoid allocations
-    fn parse(name: &str, json: Value) -> Result<Shape, ParseError> {
+    pub fn parse(name: &str, json: &Value) -> Result<Shape, ParseError> {
         let obj = match json.as_object() {
             Some(obj) => obj,
             None => return Err(ParseError::ExpectedObject)
         };
-        let shape_type = try!(ShapeType::parse(obj));
+        let shape_type = match ShapeType::parse(obj) {
+            Ok(shape_type) => shape_type,
+            Err(ParseError::InvalidMember(_)) => return Err(ParseError::InvalidMember(name.to_string())),
+            Err(err) => return Err(err),
+        };
         Ok(Shape {
             name: name.to_string(),
             shape_type: shape_type
@@ -41,7 +45,7 @@ mod test {
 
     #[test]
     fn boolean() {
-        let output = Shape::parse("Boolean", primitive_shape("Boolean"));
+        let output = Shape::parse("Boolean", &primitive_shape("Boolean"));
         assert_eq!(output, Ok(Shape {
             name:"Boolean".to_string(),
             shape_type: ShapeType::Boolean,
@@ -50,7 +54,7 @@ mod test {
 
     #[test]
     fn double() {
-        let output = Shape::parse("Double", primitive_shape("Double"));
+        let output = Shape::parse("Double", &primitive_shape("Double"));
         assert_eq!(output, Ok(Shape {
             name:"Double".to_string(),
             shape_type: ShapeType::Double,
@@ -59,7 +63,7 @@ mod test {
 
     #[test]
     fn timestamp() {
-        let output = Shape::parse("Date", primitive_shape("Date"));
+        let output = Shape::parse("Date", &primitive_shape("Date"));
         assert_eq!(output, Ok(Shape {
             name:"Date".to_string(),
             shape_type: ShapeType::Timestamp,
@@ -68,7 +72,7 @@ mod test {
 
     #[test]
     fn long() {
-        let output = Shape::parse("Long", primitive_shape("Long"));
+        let output = Shape::parse("Long", &primitive_shape("Long"));
         assert_eq!(output, Ok(Shape {
             name:"Long".to_string(),
             shape_type: ShapeType::Long,
@@ -77,7 +81,7 @@ mod test {
 
     #[test]
     fn float() {
-        let output = Shape::parse("Float", primitive_shape("Float"));
+        let output = Shape::parse("Float", &primitive_shape("Float"));
         assert_eq!(output, Ok(Shape {
             name:"Float".to_string(),
             shape_type: ShapeType::Float,

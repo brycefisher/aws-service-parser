@@ -168,6 +168,7 @@ pub fn parse_structure_or_exception(obj: &BTreeMap<String, Value>) -> Result<Sha
 }
 
 #[derive(Debug, PartialEq)]
+// TODO - refactor to have members and payload: Option<String> -- validate string is a member name...or do Option<&Member>
 pub struct Structure(Vec<Member>);
 
 impl Structure {
@@ -241,10 +242,10 @@ impl Member {
     fn parse(name: &str, required: bool, raw_member: &Value) -> Result<Member, ParseError> {
         let obj = match raw_member.as_object() {
             Some(o) => o,
-            None => return Err(ParseError::InvalidMember)
+            None => return Err(ParseError::InvalidMember(name.to_string()))
         };
-        let shape_json = try!(obj.get("shape").ok_or(ParseError::InvalidMember));
-        let shape = try!(shape_json.as_string().ok_or(ParseError::InvalidMember));
+        let shape_json = try!(obj.get("shape").ok_or(ParseError::InvalidMember(name.to_string())));
+        let shape = try!(shape_json.as_string().ok_or(ParseError::InvalidMember(name.to_string())));
         let documentation = obj.get("documentation").map(|d| d.as_string().unwrap().to_string());
         let location = try!(Location::parse(obj.get("location"), obj.get("locationName")));
 
@@ -261,6 +262,7 @@ impl Member {
 #[derive(Debug, PartialEq)]
 pub enum Location {
     Body,
+    StatusCode,
     URI(String),
     QueryString(String),
     Header(String),
@@ -268,14 +270,22 @@ pub enum Location {
 
 impl Location {
     pub fn parse(location: Option<&Value>, location_name: Option<&Value>) -> Result<Location, ParseError> {
+        // By default, location should be Body if not specified (I think...)
         if location.is_none() {
             return Ok(Location::Body);
         }
-        let json = try!(location_name.ok_or(ParseError::InvalidMember));
-        let name = try!(json.as_string().ok_or(ParseError::InvalidMember));
+
         // Won't panic because we already checked for None above.
         let json = location.unwrap();
-        let location = try!(json.as_string().ok_or(ParseError::InvalidMember));
+        let location = try!(json.as_string().ok_or(ParseError::InvalidMember("Unknow".to_string())));
+
+        // Status code location doesn't have a locationName.
+        if location == "statusCode" {
+            return Ok(Location::StatusCode);
+        }
+
+        let json = try!(location_name.ok_or(ParseError::InvalidMember("Unknown".to_string())));
+        let name = try!(json.as_string().ok_or(ParseError::InvalidMember("Unknown".to_string())));
         match location {
             "uri" => Ok(Location::URI(name.to_string())),
             "querystring" => Ok(Location::QueryString(name.to_string())),

@@ -10,7 +10,7 @@ pub enum ParseError {
     InvalidListShape,
     MissingListMember,
     InvalidListMember,
-    InvalidMember,
+    InvalidMember(String),
     InvalidRequired,
     MissingErrorInException,
     InvalidMaxInteger,
@@ -20,4 +20,7 @@ pub enum ParseError {
     InvalidStringPattern,
     InvalidStringEnum,
     InvalidStringVariant,
+    ServiceDefinitionMissingShapes,
+    ServiceDefinitionInvalidShapes,
+    SerdeError,
 }
