@@ -5,6 +5,7 @@ use std::io::Read;
 use std::collections::BTreeMap;
 use super::error::ParseError;
 use super::shape::Shape;
+use super::operation::Operation;
 use serde_json::Value;
 
 #[derive(Deserialize,Debug)]
@@ -13,7 +14,7 @@ struct PartialServiceDefinition {
     version: f64,
     documentation: String,
     metadata: Metadata,
-    operations: serde_json::Value,
+    operations: BTreeMap<String, Operation>,
     shapes: serde_json::Value,
     examples: serde_json::Value,
 }
