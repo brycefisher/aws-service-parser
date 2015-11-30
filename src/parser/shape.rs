@@ -7,8 +7,8 @@ use super::error::ParseError;
 
 #[derive(Debug, PartialEq)]
 pub struct Shape {
-    shape_type: ShapeType,
-    name: String,
+    pub shape_type: ShapeType,
+    pub name: String,
 }
 
 impl Shape {

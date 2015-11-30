@@ -80,7 +80,7 @@ impl Integer {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct List(String);
+pub struct List(pub String);
 
 impl List {
     pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
