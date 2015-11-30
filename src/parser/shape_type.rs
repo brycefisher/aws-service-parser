@@ -100,7 +100,7 @@ pub fn parse_string_enum_or_pattern(obj: &BTreeMap<String, Value>) -> Result<Sha
 }
 
 #[derive(Debug, PartialEq)]
-pub struct StringEnum(Vec<String>);
+pub struct StringEnum(pub Vec<String>);
 
 impl StringEnum {
     pub fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
