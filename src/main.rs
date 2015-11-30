@@ -7,6 +7,9 @@ extern crate serde;
 extern crate serde_json;
 
 mod parser;
+mod generater;
+
+#[cfg(test)]
 mod testhelpers;
 
 fn main() {}
