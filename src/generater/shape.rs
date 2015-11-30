@@ -40,60 +40,41 @@ mod tests {
     use ::parser::{Shape, ShapeType, List, StringEnum};
     use std::io::Write;
 
-    #[test]
-    fn boolean() {
-        let input = Shape {
-            name: "Enabled".to_string(),
-            shape_type: ShapeType::Boolean,
+    macro_rules! generates {
+        ($test:ident, $output:expr, $input:expr) => {
+            #[test]
+            fn $test() {
+                let input = $input;
+                let mut buffer = Vec::new();
+                assert!(input.generate(&mut buffer).is_ok());
+                let output = String::from_utf8(buffer).unwrap();
+                assert_eq!(output, $output.to_string());
+            }
         };
-        let mut buffer = Vec::new();
-        assert!(input.generate(&mut buffer).is_ok());
-
-        let output = String::from_utf8(buffer).unwrap();
-        assert_eq!(output, "pub type Enabled = bool;\n".to_string());
     }
 
-    #[test]
-    fn double() {
-        let input = Shape {
-            name: "Trouble".to_string(),
-            shape_type: ShapeType::Double,
-        };
-        let mut buffer = Vec::new();
-        assert!(input.generate(&mut buffer).is_ok());
+    generates!(boolean, "pub type Enabled = bool;\n", Shape {
+        name: "Enabled".to_string(),
+        shape_type: ShapeType::Boolean,
+    });
 
-        let output = String::from_utf8(buffer).unwrap();
-        assert_eq!(output, "pub type Trouble = f64;\n".to_string());
-    }
+    generates!(double, "pub type Trouble = f64;\n", Shape {
+        name: "Trouble".to_string(),
+        shape_type: ShapeType::Double,
+    });
 
-    #[test]
-    fn list() {
-        let input = Shape {
-            name: "AllTheThings".to_string(),
-            shape_type: ShapeType::List(List("Thing".to_string())),
-        };
-        let mut buffer = Vec::new();
-        assert!(input.generate(&mut buffer).is_ok());
+    generates!(list, "pub type AllTheThings = Vec<Thing>;\n", Shape {
+        name: "AllTheThings".to_string(),
+        shape_type: ShapeType::List(List("Thing".to_string())),
+    });
 
-        let output = String::from_utf8(buffer).unwrap();
-        assert_eq!(output, "pub type AllTheThings = Vec<Thing>;\n".to_string());
-    }
-
-    #[test]
-    fn string_enum() {
-        let input = Shape {
-            name: "WhereIsCarmenSanDiego".to_string(),
-            shape_type: ShapeType::StringEnum(StringEnum(vec![
-                "Berlin".to_string(),
-                "Madrid".to_string(),
-                "Toronto".to_string(),
-                "Beijing".to_string(),
-            ])),
-        };
-        let mut buffer = Vec::new();
-        assert!(input.generate(&mut buffer).is_ok());
-
-        let output = String::from_utf8(buffer).unwrap();
-        assert_eq!(output, "pub enum WhereIsCarmenSanDiego {\n    Berlin,\n    Madrid,\n    Toronto,\n    Beijing,\n};\n".to_string());
-    }
+    generates!(string_enum, "pub enum WhereIsCarmenSanDiego {\n    Berlin,\n    Madrid,\n    Toronto,\n    Beijing,\n};\n", Shape {
+        name: "WhereIsCarmenSanDiego".to_string(),
+        shape_type: ShapeType::StringEnum(StringEnum(vec![
+            "Berlin".to_string(),
+            "Madrid".to_string(),
+            "Toronto".to_string(),
+            "Beijing".to_string(),
+        ])),
+    });
 }
