@@ -14,6 +14,7 @@ impl Shape {
             &ShapeType::List(List(ref list_type)) => format!("Vec<{}>", &list_type.to_string()),
             &ShapeType::Long => "i64".to_string(),
             &ShapeType::StringEnum(ref string_enum) => return string_enum.generate(out, &self.name),
+            &ShapeType::StringPattern(_) => "String".to_string(),
             &ShapeType::Structure(ref structure) => return structure.generate(out, &self.name),
             _ => unimplemented!()
         };
@@ -128,5 +129,14 @@ mod tests {
                 location: Location::Body
             },
         ]))
+    });
+
+    generates!(string_pattern, "pub type AsciiArt = String;\n", Shape {
+        name: "AsciiArt".to_string(),
+        shape_type: ShapeType::StringPattern(StringPattern {
+            pattern: ".*".to_string(),
+            min: None,
+            max: None,
+        }),
     });
 }
