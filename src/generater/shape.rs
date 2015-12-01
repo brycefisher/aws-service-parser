@@ -1,7 +1,7 @@
+use std::io::Error;
 use std::io::prelude::*;
 use ::parser::shape::Shape;
-use ::parser::shape_type::{ShapeType, List, StringEnum};
-use super::error::*;
+use ::parser::shape_type::{ShapeType, List, StringEnum, Member, Location, Structure};
 
 impl Shape {
     pub fn generate<W: Write>(&self, out: &mut W) -> Result<(), Error> {
@@ -17,13 +17,34 @@ impl Shape {
             },
             &ShapeType::Long => "i64".to_string(),
             &ShapeType::StringEnum(StringEnum(ref variants)) => return generate_string_enum(out, &self.name, variants),
-            _ => return Err(Error),
+            &ShapeType::Structure(ref structure) => return structure.generate(out, &self.name),
+            _ => unimplemented!()
         };
         writeln!(out, "pub type {} = {};", &self.name, rust_type);
         Ok(())
     }
 }
 
+impl Member {
+    pub fn generate<W:Write>(&self, out: &mut W) -> Result<(), Error> {
+        if let Some(ref documentation) = self.documentation {
+            try!(writeln!(out, "    /// {}", documentation));
+        }
+        let name = &self.name;
+        let shape = &self.shape;
+        match self.required {
+            true => try!(writeln!(out, "    pub {name}: {shape},", name=name, shape=shape)),
+            false => try!(writeln!(out, "    pub {name}: Option<{shape}>,", name=name, shape=shape)),
+        };
+        Ok(())
+    }
+}
+
+/// This method is a bit peculiar in that it hijacks `generate()` entirely.
+/// That's because enums are not allowed to take the form `pub type MyEnum = ...;`
+/// (which all the other shapes follow). Instead it must take the form:
+/// `pub enum MyEnum { ... }`. This keeps the implementation clearer for all
+/// the normal cases in generate.
 fn generate_string_enum<W: Write>(out: &mut W, name: &str, variants: &Vec<String>) -> Result<(), Error> {
     // TODO: propagate errors from `writeln!`
     writeln!(out, "pub enum {} {{", name);
@@ -34,10 +55,22 @@ fn generate_string_enum<W: Write>(out: &mut W, name: &str, variants: &Vec<String
     Ok(())
 }
 
+impl Structure {
+    pub fn generate<W: Write>(&self, out: &mut W, name: &str) -> Result<(), Error> {
+        try!(writeln!(out, "#[derive(Debug, Default)]"));
+        try!(writeln!(out, "pub struct {} {{", name));
+        for member in &self.0 {
+            member.generate(out);
+        }
+        try!(writeln!(out, "}}"));
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::parser::{Shape, ShapeType, List, StringEnum};
+    use ::parser::{Shape, ShapeType, List, StringEnum, Member, Location, Structure};
     use std::io::Write;
 
     macro_rules! generates {
@@ -76,5 +109,25 @@ mod tests {
             "Toronto".to_string(),
             "Beijing".to_string(),
         ])),
+    });
+
+    generates!(structure, "#[derive(Debug, Default)]\npub struct GenieInABottle {\n    pub owner: Option<Person>,\n    pub wishes: integer,\n}\n", Shape {
+        name: "GenieInABottle".to_string(),
+        shape_type: ShapeType::Structure(Structure(vec![
+            Member {
+                name: "owner".to_string(),
+                shape: "Person".to_string(),
+                documentation: None,
+                required: false,
+                location: Location::Body
+            },
+            Member {
+                name: "wishes".to_string(),
+                shape: "integer".to_string(),
+                documentation: None,
+                required: true,
+                location: Location::Body
+            },
+        ]))
     });
 }

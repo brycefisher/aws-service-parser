@@ -166,7 +166,7 @@ pub fn parse_structure_or_exception(obj: &BTreeMap<String, Value>) -> Result<Sha
 
 #[derive(Debug, PartialEq)]
 // TODO - refactor to have members and payload: Option<String> -- validate string is a member name...or do Option<&Member>
-pub struct Structure(Vec<Member>);
+pub struct Structure(pub Vec<Member>);
 
 impl Structure {
     fn parse(obj: &BTreeMap<String, Value>) -> Result<ShapeType, ParseError> {
