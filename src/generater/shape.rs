@@ -1,7 +1,6 @@
 use std::io::Error;
 use std::io::prelude::*;
-use ::parser::shape::Shape;
-use ::parser::shape_type::{ShapeType, List, StringEnum, Member, Location, Structure};
+use ::parser::*;
 
 impl Shape {
     pub fn generate<W: Write>(&self, out: &mut W) -> Result<(), Error> {
@@ -12,15 +11,13 @@ impl Shape {
             &ShapeType::Double => "f64".to_string(),
             &ShapeType::Float => "f32".to_string(),
             &ShapeType::Integer(_) => "i32".to_string(), // TODO -- use min/max info...
-            &ShapeType::List(List(ref list_type)) => {
-                format!("Vec<{}>", &list_type.to_string())
-            },
+            &ShapeType::List(List(ref list_type)) => format!("Vec<{}>", &list_type.to_string()),
             &ShapeType::Long => "i64".to_string(),
-            &ShapeType::StringEnum(StringEnum(ref variants)) => return generate_string_enum(out, &self.name, variants),
+            &ShapeType::StringEnum(ref string_enum) => return string_enum.generate(out, &self.name),
             &ShapeType::Structure(ref structure) => return structure.generate(out, &self.name),
             _ => unimplemented!()
         };
-        writeln!(out, "pub type {} = {};", &self.name, rust_type);
+        try!(writeln!(out, "pub type {} = {};", &self.name, rust_type));
         Ok(())
     }
 }
@@ -40,19 +37,21 @@ impl Member {
     }
 }
 
-/// This method is a bit peculiar in that it hijacks `generate()` entirely.
-/// That's because enums are not allowed to take the form `pub type MyEnum = ...;`
-/// (which all the other shapes follow). Instead it must take the form:
-/// `pub enum MyEnum { ... }`. This keeps the implementation clearer for all
-/// the normal cases in generate.
-fn generate_string_enum<W: Write>(out: &mut W, name: &str, variants: &Vec<String>) -> Result<(), Error> {
-    // TODO: propagate errors from `writeln!`
-    writeln!(out, "pub enum {} {{", name);
-    for variant in variants {
-        writeln!(out, "    {},", variant);
+impl StringEnum {
+
+    /// This method is a bit peculiar in that it hijacks `generate()` entirely.
+    /// That's because enums are not allowed to take the form `pub type MyEnum = ...;`
+    /// (which most other shapes follow). Instead it must take the form:
+    /// `pub enum MyEnum { ... }`. This keeps the implementation clearer for all
+    /// the normal cases in generate.
+    pub fn generate<W: Write>(&self, out: &mut W, name: &str) -> Result<(), Error> {
+        try!(writeln!(out, "pub enum {} {{", name));
+        for variant in &self.0 {
+            try!(writeln!(out, "    {},", variant));
+        }
+        try!(writeln!(out, "}};"));
+        Ok(())
     }
-    writeln!(out, "}};");
-    Ok(())
 }
 
 impl Structure {
@@ -70,7 +69,7 @@ impl Structure {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::parser::{Shape, ShapeType, List, StringEnum, Member, Location, Structure};
+    use ::parser::*;
     use std::io::Write;
 
     macro_rules! generates {
