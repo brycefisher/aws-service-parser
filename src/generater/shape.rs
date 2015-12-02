@@ -71,37 +71,39 @@ impl Structure {
 mod tests {
     use super::*;
     use ::parser::*;
+    use ::testhelpers::fixture_string;
     use std::io::Write;
 
     macro_rules! generates {
-        ($test:ident, $output:expr, $input:expr) => {
+        ($test:ident, $fixture:expr, $input:expr) => {
             #[test]
             fn $test() {
                 let input = $input;
                 let mut buffer = Vec::new();
                 assert!(input.generate(&mut buffer).is_ok());
-                let output = String::from_utf8(buffer).unwrap();
-                assert_eq!(output, $output.to_string());
+                let actual = String::from_utf8(buffer).unwrap();
+                let expected = fixture_string(&format!("generated/{}.rs", $fixture));
+                assert_eq!(expected, actual);
             }
         };
     }
 
-    generates!(boolean, "pub type Enabled = bool;\n", Shape {
+    generates!(boolean, "boolean", Shape {
         name: "Enabled".to_string(),
         shape_type: ShapeType::Boolean,
     });
 
-    generates!(double, "pub type Trouble = f64;\n", Shape {
+    generates!(double, "double-trouble", Shape {
         name: "Trouble".to_string(),
         shape_type: ShapeType::Double,
     });
 
-    generates!(list, "pub type AllTheThings = Vec<Thing>;\n", Shape {
+    generates!(list, "list", Shape {
         name: "AllTheThings".to_string(),
         shape_type: ShapeType::List(List("Thing".to_string())),
     });
 
-    generates!(string_enum, "pub enum WhereIsCarmenSanDiego {\n    Berlin,\n    Madrid,\n    Toronto,\n    Beijing,\n};\n", Shape {
+    generates!(string_enum, "string_enum", Shape {
         name: "WhereIsCarmenSanDiego".to_string(),
         shape_type: ShapeType::StringEnum(StringEnum(vec![
             "Berlin".to_string(),
@@ -111,7 +113,7 @@ mod tests {
         ])),
     });
 
-    generates!(structure, "#[derive(Debug, Default)]\npub struct GenieInABottle {\n    pub owner: Option<Person>,\n    pub wishes: integer,\n}\n", Shape {
+    generates!(structure, "structure-genie-in-a-bottle", Shape {
         name: "GenieInABottle".to_string(),
         shape_type: ShapeType::Structure(Structure(vec![
             Member {
@@ -131,7 +133,7 @@ mod tests {
         ]))
     });
 
-    generates!(string_pattern, "pub type AsciiArt = String;\n", Shape {
+    generates!(string_pattern, "string_pattern", Shape {
         name: "AsciiArt".to_string(),
         shape_type: ShapeType::StringPattern(StringPattern {
             pattern: ".*".to_string(),
