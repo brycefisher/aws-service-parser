@@ -142,4 +142,28 @@ mod tests {
             max: None,
         }),
     });
+
+    generates!(exception, "exception", Shape {
+        name: "ServiceException".to_string(),
+        shape_type: ShapeType::Exception(Exception {
+            documentation: Some("The AWS Lambda service encountered an internal error.".to_string()),
+            status_code: 500,
+            members: vec![
+                Member {
+                    name: "Type".to_string(),
+                    required: true,
+                    documentation: None,
+                    shape: "String".to_string(),
+                    location: Location::Body,
+                },
+                Member {
+                    name: "Message".to_string(),
+                    required: true,
+                    documentation: None,
+                    shape: "String".to_string(),
+                    location: Location::Body,
+                },
+            ],
+        }),
+    });
 }
