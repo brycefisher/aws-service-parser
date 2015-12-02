@@ -14,6 +14,7 @@ impl Shape {
             &ShapeType::List(List(ref list_type)) => format!("Vec<{}>", &list_type.to_string()),
             &ShapeType::Long => "i64".to_string(),
             &ShapeType::StringEnum(ref string_enum) => return string_enum.generate(out, &self.name),
+            &ShapeType::Timestamp |
             &ShapeType::StringPattern(_) => "String".to_string(),
             &ShapeType::Structure(ref structure) => return structure.generate(out, &self.name),
             _ => unimplemented!()
