@@ -17,7 +17,7 @@ impl Shape {
             &ShapeType::Timestamp |
             &ShapeType::StringPattern(_) => "String".to_string(),
             &ShapeType::Structure(ref structure) => return structure.generate(out, &self.name),
-            _ => unimplemented!()
+            &ShapeType::Exception(ref exception) => return exception.generate(out, &self.name),
         };
         try!(writeln!(out, "pub type {} = {};", &self.name, rust_type));
         Ok(())
@@ -64,6 +64,39 @@ impl Structure {
             member.generate(out);
         }
         try!(writeln!(out, "}}"));
+        Ok(())
+    }
+}
+
+impl Exception {
+    pub fn generate<W: Write>(&self, out: &mut W, name: &str) -> Result<(), Error> {
+        try!(writeln!(out, "#[derive(Debug)]"));
+        if let Some(ref docs) = self.documentation {
+          try!(writeln!(out, "/// {}", docs));
+        }
+        try!(writeln!(out, "pub struct {} {{", name));
+        for member in &self.members {
+            member.generate(out);
+        }
+        try!(writeln!(out, "}}\n"));
+
+        try!(writeln!(out, "impl ::std::error::Error for {} {{", name));
+        try!(writeln!(out, "    pub fn description(&self) -> &str {{"));
+        try!(write!(out, "        &format!(\"{}:", name));
+        for _ in &self.members {
+            try!(write!(out, " {{}}"));
+        }
+        try!(write!(out, "\""));
+        for member in &self.members {
+            try!(write!(out, ", self.{}", member.name));
+        }
+        try!(writeln!(out, ");"));
+        try!(writeln!(out, "    }}\n"));
+        try!(writeln!(out, "    pub fn cause(&self) -> Option<&Error> {{"));
+        try!(writeln!(out, "        None"));
+        try!(writeln!(out, "    }}"));
+        try!(writeln!(out, "}}"));
+
         Ok(())
     }
 }
