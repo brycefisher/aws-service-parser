@@ -15,8 +15,8 @@ struct PartialServiceDefinition {
     documentation: String,
     metadata: Metadata,
     operations: BTreeMap<String, Operation>,
-    shapes: serde_json::Value,
-    examples: serde_json::Value,
+    shapes: Value,
+    examples: Value,
 }
 
 #[derive(Debug)]
@@ -68,6 +68,9 @@ impl ServiceDefinition {
 
 #[cfg(test)]
 mod test {
+    extern crate serde;
+    extern crate serde_json;
+
     use super::*;
     use super::PartialServiceDefinition;
     use ::testhelpers::fixture_reader;
