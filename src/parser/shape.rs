@@ -32,9 +32,6 @@ impl Shape {
 
 #[cfg(test)]
 mod test {
-    extern crate serde;
-    extern crate serde_json;
-
     use super::*;
     use super::super::shape_type::*;
     use ::testhelpers::fixture_btreemap;

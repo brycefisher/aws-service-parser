@@ -51,7 +51,7 @@ impl StringEnum {
         for variant in &self.0 {
             try!(writeln!(out, "    {},", variant));
         }
-        try!(writeln!(out, "}};"));
+        try!(writeln!(out, "}}"));
         Ok(())
     }
 }
@@ -61,7 +61,7 @@ impl Structure {
         try!(writeln!(out, "#[derive(Debug, Default)]"));
         try!(writeln!(out, "pub struct {} {{", name));
         for member in &self.0 {
-            member.generate(out);
+            try!(member.generate(out));
         }
         try!(writeln!(out, "}}"));
         Ok(())
@@ -76,7 +76,7 @@ impl Exception {
         }
         try!(writeln!(out, "pub struct {} {{", name));
         for member in &self.members {
-            member.generate(out);
+            try!(member.generate(out));
         }
         try!(writeln!(out, "}}\n"));
 
@@ -103,10 +103,8 @@ impl Exception {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ::parser::*;
     use ::testhelpers::fixture_string;
-    use std::io::Write;
 
     macro_rules! generates {
         ($test:ident, $fixture:expr, $input:expr) => {

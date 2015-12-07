@@ -3,4 +3,4 @@ pub enum WhereIsCarmenSanDiego {
     Madrid,
     Toronto,
     Beijing,
-};
+}

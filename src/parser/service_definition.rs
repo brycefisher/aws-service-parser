@@ -21,11 +21,11 @@ struct PartialServiceDefinition {
 
 #[derive(Debug)]
 pub struct ServiceDefinition {
-    version: f64,
-    documentation: String,
-    metadata: Metadata,
-    operations: Vec<String>,
-    shapes: Vec<Shape>,
+    pub version: f64,
+    pub documentation: String,
+    pub metadata: Metadata,
+    pub operations: Vec<String>,
+    pub shapes: Vec<Shape>,
 }
 
 #[derive(Deserialize,Debug)]
@@ -68,9 +68,6 @@ impl ServiceDefinition {
 
 #[cfg(test)]
 mod test {
-    extern crate serde;
-    extern crate serde_json;
-
     use super::*;
     use super::PartialServiceDefinition;
     use ::testhelpers::fixture_reader;
